@@ -10,6 +10,9 @@ import (
 	"cs.utexas.edu/zjia/faas/types"
 
 	"go.mongodb.org/mongo-driver/mongo"
+
+	"database/sql"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type initHandler struct {
@@ -48,28 +51,47 @@ func initSlib(ctx context.Context, env types.Environment) error {
 }
 
 func initMongo(ctx context.Context, client *mongo.Client) error {
-	db := client.Database("retwis")
+	// db := client.Database("retwis")
 
-	if err := utils.MongoCreateCounter(ctx, db, "next_user_id"); err != nil {
-		return err
-	}
+	// if err := utils.MongoCreateCounter(ctx, db, "next_user_id"); err != nil {
+	// 	return err
+	// }
 
-	if err := utils.MongoCreateIndex(ctx, db.Collection("users"), "userId", true /* unique */); err != nil {
-		return err
-	}
+	// if err := utils.MongoCreateIndex(ctx, db.Collection("users"), "userId", true /* unique */); err != nil {
+	// 	return err
+	// }
 
-	if err := utils.MongoCreateIndex(ctx, db.Collection("users"), "username", true /* unique */); err != nil {
-		return err
-	}
+	// if err := utils.MongoCreateIndex(ctx, db.Collection("users"), "username", true /* unique */); err != nil {
+	// 	return err
+	// }
 
-	return nil
+	// return nil
 
-	//Create the schema in the database here
+	db, err := sql.Open("mysql", "admin:GoDawgs1!@tcp(dcs-db-1.ctugy0c6df5g.us-east-2.rds.amazonaws.com:3306)/retwis")
+
+	fmt.Println(db)
+	fmt.Println(err)
+
+	db.Query("DROP TABLE posts;")
+	db.Query("DROP TABLE following;")
+	db.Query("DROP TABLE logins;")
+	db.Query("DROP TABLE users;")
+
+	db.Query("CREATE TABLE users (userId int PRIMARY KEY AUTO_INCREMENT, username varchar(255), password varchar(255), auth int);");
+	
+	db.Query("CREATE TABLE following( followingUser int, followedUser int, FOREIGN KEY (followedUser) REFERENCES users(userId), FOREIGN KEY (followingUser) REFERENCES users(userId) );")
+
+	db.Query("CREATE TABLE posts ( userID int, post varchar(255), dt DATETIME, FOREIGN KEY (userID) REFERENCES users(userId) )")
+
+	db.Query("CREATE TABLE logins ( userID int, dt DATETIME, successful BOOLEAN, FOREIGN KEY (userID) REFERENCES users(userId) )")
+
+	//Created the database from the follwing-schema
 
 	// CREATE TABLE users (
 	// 	userId int PRIMARY KEY,
 	// 	username varchar(255),
-	// 	password varchar(255)
+	// 	password varchar(255),
+	//  auth int
 	// );
 	
 	// CREATE TABLE following(
@@ -85,6 +107,14 @@ func initMongo(ctx context.Context, client *mongo.Client) error {
 	// 	post varchar(255),
 	// 	dt DATETIME,
 		
+	// 	FOREIGN KEY (userID) REFERENCES users(userId)
+	// )
+
+	// CREATE TABLE logins (
+	// 	userID int,
+	// 	dt DATETIME,
+	// 	successful BOOLEAN,
+
 	// 	FOREIGN KEY (userID) REFERENCES users(userId)
 	// )
 }

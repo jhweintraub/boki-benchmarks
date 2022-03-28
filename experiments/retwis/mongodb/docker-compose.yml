@@ -17,26 +17,34 @@ services:
     restart: always
 
   mongodb:
-    image: mysql/mysql-server:latest
-    hostname: mysql1
-    # volumes:
-    #   - /mnt/storage/mongo:/data/db
-    environment:
-      # You can use whatever password you like
-      - MYSQL_DATABASE=boki
-      - MYSQL_USER=user
-      - MYSQL_PASSWORD=password
-      # Password for root access
-      - MYSQL_ROOT_PASSWORD=password
+    image: mongo:4.4.4-bionic
+    hostname: mongodb-{{.Task.Slot}}
+    command: mongod --replSet rs0
+    volumes:
+      - /mnt/storage/mongo:/data/db
 
   mongodb-setup:
-    image: mysql/mysql-server:latest
+    image: mongo:4.4.4-bionic
     working_dir: /tmp/mongo
     command: /tmp/mongo/mongo_setup.sh
     depends_on:
        - mongodb
     volumes:
       - /tmp/mongo_setup.sh:/tmp/mongo/mongo_setup.sh
+      - /tmp/init_mongo_rs.js:/tmp/mongo/init_mongo_rs.js
+    restart: always
+
+  mysql:
+    image: mysql-server:latest
+    hostname: mysql-{{.Task.Slot}}
+    volumes:
+      - /mnt/storage/mysql:/data/db
+
+  mysql-setup:
+    image: mysql-server:latest
+    working_dir: /tmp/mysql
+    depends_on:
+      - mysql
     restart: always
 
   boki-engine:
@@ -92,7 +100,7 @@ services:
     volumes:
       - /mnt/inmem/boki:/tmp/boki
     environment:
-      - MONGODB_URI=mysql://mysql-1:27017
+      - MONGODB_URI=mongodb://mongodb-1:27017,mongodb-2:27017,mongodb-3:27017/?replicaSet=rs0
       - FAAS_GO_MAX_PROC_FACTOR=4
       - GOGC=200
     depends_on:
@@ -100,12 +108,12 @@ services:
     restart: always
 
   retwis-register:
-    image: zjia/boki-retwisbench:sosp-ae
+    image: joshuaweintraub/boki-retwisbench:sosp-ae
     entrypoint: ["/tmp/boki/run_launcher", "/retwisbench-bin/main", "2"]
     volumes:
       - /mnt/inmem/boki:/tmp/boki
     environment:
-      - MONGODB_URI=mysql://mysql-1:27017
+      - MONGODB_URI=mongodb://mongodb-1:27017,mongodb-2:27017,mongodb-3:27017/?replicaSet=rs0
       - FAAS_GO_MAX_PROC_FACTOR=4
       - GOGC=200
     depends_on:
@@ -113,12 +121,12 @@ services:
     restart: always
 
   retwis-login:
-    image: zjia/boki-retwisbench:sosp-ae
+    image: joshuaweintraub/boki-retwisbench:sosp-ae
     entrypoint: ["/tmp/boki/run_launcher", "/retwisbench-bin/main", "3"]
     volumes:
       - /mnt/inmem/boki:/tmp/boki
     environment:
-      - MONGODB_URI=mysql://mysql-1:27017
+      - MONGODB_URI=mongodb://mongodb-1:27017,mongodb-2:27017,mongodb-3:27017/?replicaSet=rs0
       - FAAS_GO_MAX_PROC_FACTOR=4
       - GOGC=200
     depends_on:
@@ -126,12 +134,12 @@ services:
     restart: always
 
   retwis-profile:
-    image: zjia/boki-retwisbench:sosp-ae
+    image: joshuaweintraub/boki-retwisbench:sosp-ae
     entrypoint: ["/tmp/boki/run_launcher", "/retwisbench-bin/main", "4"]
     volumes:
       - /mnt/inmem/boki:/tmp/boki
     environment:
-      - MONGODB_URI=mysql://mysql-1:27017
+      - MONGODB_URI=mongodb://mongodb-1:27017,mongodb-2:27017,mongodb-3:27017/?replicaSet=rs0
       - FAAS_GO_MAX_PROC_FACTOR=4
       - GOGC=200
     depends_on:
@@ -139,12 +147,12 @@ services:
     restart: always
 
   retwis-follow:
-    image: zjia/boki-retwisbench:sosp-ae
+    image: joshuaweintraub/boki-retwisbench:sosp-ae
     entrypoint: ["/tmp/boki/run_launcher", "/retwisbench-bin/main", "5"]
     volumes:
       - /mnt/inmem/boki:/tmp/boki
     environment:
-      - MONGODB_URI=mysql://mysql-1:27017
+      - MONGODB_URI=mongodb://mongodb-1:27017,mongodb-2:27017,mongodb-3:27017/?replicaSet=rs0
       - FAAS_GO_MAX_PROC_FACTOR=4
       - GOGC=200
     depends_on:
@@ -152,12 +160,12 @@ services:
     restart: always
 
   retwis-post:
-    image: zjia/boki-retwisbench:sosp-ae
+    image: joshuaweintraub/boki-retwisbench:sosp-ae
     entrypoint: ["/tmp/boki/run_launcher", "/retwisbench-bin/main", "6"]
     volumes:
       - /mnt/inmem/boki:/tmp/boki
     environment:
-      - MONGODB_URI=mysql://mysql-1:27017
+      - MONGODB_URI=mongodb://mongodb-1:27017,mongodb-2:27017,mongodb-3:27017/?replicaSet=rs0
       - FAAS_GO_MAX_PROC_FACTOR=4
       - GOGC=200
     depends_on:
@@ -165,12 +173,12 @@ services:
     restart: always
 
   retwis-post-list:
-    image: zjia/boki-retwisbench:sosp-ae
+    image: joshuaweintraub/boki-retwisbench:sosp-ae
     entrypoint: ["/tmp/boki/run_launcher", "/retwisbench-bin/main", "7"]
     volumes:
       - /mnt/inmem/boki:/tmp/boki
     environment:
-      - MONGODB_URI=mysql://mysql-1:27017
+      - MONGODB_URI=mongodb://mongodb-1:27017,mongodb-2:27017,mongodb-3:27017/?replicaSet=rs0
       - FAAS_GO_MAX_PROC_FACTOR=4
       - GOGC=200
     depends_on:

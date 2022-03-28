@@ -105,26 +105,40 @@ func registerMongo(ctx context.Context, client *mongo.Client, input *RegisterInp
 	defer sess.EndSession(ctx)
 
 	userId, err := sess.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
-		db := client.Database("retwis")
-		userIdValue, err := utils.MongoFetchAddCounter(sessCtx, db, "next_user_id", 1)
-		if err != nil {
-			return nil, err
-		}
+		
+		//connect to the database
 
-		userId := fmt.Sprintf("%08x", userIdValue)
-		userBson := bson.D{
-			{"userId", userId},
-			{"username", input.UserName},
-			{"password", input.Password},
-			{"auth", fmt.Sprintf("%016x", rand.Uint64())},
-			{"followers", bson.D{}},
-			{"followees", bson.D{}},
-			{"posts", bson.A{}},
-		}
-		if _, err := db.Collection("users").InsertOne(sessCtx, userBson); err != nil {
-			return nil, err
-		}
+		// db := client.Database("retwis")
 
+		//Need to override this here to get the next userIdValue
+
+		// userIdValue, err := utils.MongoFetchAddCounter(sessCtx, db, "next_user_id", 1)
+		// if err != nil {
+		// 	return nil, err
+		// }
+
+		// userId := fmt.Sprintf("%08x", userIdValue)
+		// userBson := bson.D{
+		// 	{"userId", userId},
+		// 	{"username", input.UserName},
+		// 	{"password", input.Password},
+
+		// ------- AUTH = Random string as Auth Token ---
+	
+		// 	{"auth", fmt.Sprintf("%016x", rand.Uint64())},
+		// 	{"followers", bson.D{}},
+		// 	{"followees", bson.D{}},
+		// 	{"posts", bson.A{}},
+		// }
+
+
+		//Insert and if failure return the error.
+		// if _, err := db.Collection("users").InsertOne(sessCtx, userBson); err != nil {
+		// 	return nil, err
+		// }
+
+		
+			//Otherwise return the new userID
 		return userId, nil
 	}, utils.MongoTxnOptions())
 

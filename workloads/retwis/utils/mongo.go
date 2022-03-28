@@ -57,20 +57,46 @@ func MongoCreateCounter(ctx context.Context, db *mongo.Database, name string) er
 }
 
 func MongoFetchAddCounter(ctx context.Context, db *mongo.Database, name string, delta int) (int, error) {
-	collection := db.Collection("counters")
-	filter := bson.D{{"name", name}}
-	update := bson.D{{"$inc", bson.D{{"value", int32(delta)}}}}
-	var updatedDocument bson.M
-	err := collection.FindOneAndUpdate(ctx, filter, update).Decode(&updatedDocument)
-	if err != nil {
-		return 0, err
-	}
-	if value, ok := updatedDocument["value"].(int32); ok {
-		return int(value), nil
-	} else {
-		return 0, fmt.Errorf("%s value cannot be converted to int32", name)
-	}
+	// collection := db.Collection("counters")
+	// filter := bson.D{{"name", name}}
+	// update := bson.D{{"$inc", bson.D{{"value", int32(delta)}}}}
+	// var updatedDocument bson.M
+	// err := collection.FindOneAndUpdate(ctx, filter, update).Decode(&updatedDocument)
+	// if err != nil {
+	// 	return 0, err
+	// }
+	// if value, ok := updatedDocument["value"].(int32); ok {
+	// 	return int(value), nil
+	// } else {
+	// 	return 0, fmt.Errorf("%s value cannot be converted to int32", name)
+	// }
+
+	//Determine what the latest value is so that you can create a new UserID		
+	
 }
+ //TODO: Determine parameters to not re-establish connections
+func mysqlFetchAddCounter() (int, error) {
+	// db, err := sql.Open("mysql", "admin:GoDawgs1!@tcp(dcs-db-1.ctugy0c6df5g.us-east-2.rds.amazonaws.com:3306)/retwis")
+
+	results,err := db.Query("SELECT COUNT(*) FROM users")
+	defer results.Close()
+	fmt.Println(results)
+
+	var (
+		id int
+	)
+
+	for results.Next() {
+		results.Scan(&id)
+		fmt.Println(id)
+	}
+	
+	//Return error if necesarry
+
+	return id
+
+}
+
 
 func MongoCreateIndex(ctx context.Context, collection *mongo.Collection, key string, unique bool) error {
 	indexOpts := options.Index().SetUnique(unique)

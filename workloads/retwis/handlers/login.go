@@ -88,16 +88,21 @@ func loginSlib(ctx context.Context, env types.Environment, input *LoginInput) (*
 }
 
 func loginMongo(ctx context.Context, client *mongo.Client, input *LoginInput) (*LoginOutput, error) {
+	//Establish connection to DB
 	db := client.Database("retwis")
 
-	var user bson.M
-	if err := db.Collection("users").FindOne(ctx, bson.D{{"username", input.UserName}}).Decode(&user); err != nil {
-		return &LoginOutput{
-			Success: false,
-			Message: fmt.Sprintf("Mongo failed: %v", err),
-		}, nil
-	}
+	//Get value of password from database
+	
+	
+	// var user bson.M
+	// if err := db.Collection("users").FindOne(ctx, bson.D{{"username", input.UserName}}).Decode(&user); err != nil {
+	// 	return &LoginOutput{
+	// 		Success: false,
+	// 		Message: fmt.Sprintf("Mongo failed: %v", err),
+	// 	}, nil
+	// }
 
+	//if your password doesn't match the intended password, then return failure.
 	if input.Password != user["password"].(string) {
 		return &LoginOutput{
 			Success: false,
