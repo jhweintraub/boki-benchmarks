@@ -67,7 +67,7 @@ func initMongo(ctx context.Context, client *mongo.Client) error {
 
 	// return nil
 
-	db, err := sql.Open("mysql", "admin:GoDawgs1!@tcp(dcs-db-1.ctugy0c6df5g.us-east-2.rds.amazonaws.com:3306)/retwis")
+	db, err := utils.CreateMysqlClientOrDie(ctx)
 
 	fmt.Println(db)
 	fmt.Println(err)
@@ -77,7 +77,7 @@ func initMongo(ctx context.Context, client *mongo.Client) error {
 	db.Query("DROP TABLE logins;")
 	db.Query("DROP TABLE users;")
 
-	db.Query("CREATE TABLE users (userId int PRIMARY KEY AUTO_INCREMENT, username varchar(255), password varchar(255), auth int);");
+	db.Query("CREATE TABLE users (userId int PRIMARY KEY AUTO_INCREMENT, username varchar(255), password varchar(255), auth varchar(255));");
 	
 	db.Query("CREATE TABLE following( followingUser int, followedUser int, FOREIGN KEY (followedUser) REFERENCES users(userId), FOREIGN KEY (followingUser) REFERENCES users(userId) );")
 
@@ -91,7 +91,7 @@ func initMongo(ctx context.Context, client *mongo.Client) error {
 	// 	userId int PRIMARY KEY,
 	// 	username varchar(255),
 	// 	password varchar(255),
-	//  auth int
+	//  auth varchar(255)
 	// );
 	
 	// CREATE TABLE following(

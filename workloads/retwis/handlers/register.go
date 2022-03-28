@@ -109,13 +109,46 @@ func registerMongo(ctx context.Context, client *mongo.Client, input *RegisterInp
 		//connect to the database
 
 		// db := client.Database("retwis")
+		db := utils.mysqlFetchAddCounter(sessCtx)
+		userIdValue, err := utils.mysqlFetchAddCounter(sessCtx, db, 1)
 
 		//Need to override this here to get the next userIdValue
 
 		// userIdValue, err := utils.MongoFetchAddCounter(sessCtx, db, "next_user_id", 1)
-		// if err != nil {
-		// 	return nil, err
-		// }
+		if err != nil {
+			return nil, err
+		}
+
+		userId := fmt.Sprintf("%08x", userIdValue)
+		auth :=  fmt.Sprintf("%016x", rand.Uint64())} //A series of hex values - represented as varchar I guess
+
+
+		results, err := db.QueryContext(ctx, "INSERT INTO users(userId, username, password, auth) VALUES(?, ?, ?, ?)", userId, input.UserName, input.Password, auth)
+
+		//Null check for query execution - TODO - Make code cleaner
+		if err != nil {
+			return nil, err
+		}
+
+		results,err := db.QueryContext("SELECT userId FROM users where username=?", input.UserName)
+
+		if err != nil {
+			fmt.Println("FAILURE IN EXECUTING QUERY")
+		}
+	
+		
+	
+		for results.Next() {
+			results.Scan(&id)
+			
+		}
+
+		if userId != id {
+			//Check to make sure that the values were inserted correctly, otherwise return error
+			return nil, err
+		}
+
+		
 
 		// userId := fmt.Sprintf("%08x", userIdValue)
 		// userBson := bson.D{
@@ -145,12 +178,14 @@ func registerMongo(ctx context.Context, client *mongo.Client, input *RegisterInp
 	if err != nil {
 		return &RegisterOutput{
 			Success: false,
-			Message: fmt.Sprintf("Mongo failed: %v", err),
+			Message: fmt.Sprintf("Mysql Insertion failed: %v", err),
 		}, nil
 	}
 
 	return &RegisterOutput{
 		Success: true,
+
+		//Guessing this is like a toString() type-method but not entirely sure
 		UserId:  userId.(string),
 	}, nil
 }
