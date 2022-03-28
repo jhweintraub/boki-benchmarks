@@ -63,6 +63,30 @@ func initMongo(ctx context.Context, client *mongo.Client) error {
 	}
 
 	return nil
+
+	//Create the schema in the database here
+
+	// CREATE TABLE users (
+	// 	userId int PRIMARY KEY,
+	// 	username varchar(255),
+	// 	password varchar(255)
+	// );
+	
+	// CREATE TABLE following(
+	// 	followingUser int,
+	// 	followedUser int,
+		
+	// 	FOREIGN KEY (followedUser) REFERENCES users(userId),
+	// 	FOREIGN KEY (followingUser) REFERENCES users(userId)
+	// );
+	
+	// CREATE TABLE posts (
+	// 	userID int, 
+	// 	post varchar(255),
+	// 	dt DATETIME,
+		
+	// 	FOREIGN KEY (userID) REFERENCES users(userId)
+	// )
 }
 
 func (h *initHandler) Call(ctx context.Context, input []byte) ([]byte, error) {

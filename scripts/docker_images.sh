@@ -18,7 +18,7 @@ function build_queuebench {
 }
 
 function build_retwisbench {
-    docker build -t zjia/boki-retwisbench:sosp-ae \
+    docker build -t joshuaweintraub/boki-retwisbench:sosp-ae \
         -f $ROOT_DIR/dockerfiles/Dockerfile.retwisbench \
         $ROOT_DIR/workloads/retwis
 }
@@ -30,17 +30,17 @@ function build_beldibench {
 }
 
 function build {
-    build_boki
-    build_queuebench
+    # build_boki
+    # build_queuebench
     build_retwisbench
-    build_beldibench
+    # build_beldibench
 }
 
 function push {
-    docker push zjia/boki:sosp-ae
-    docker push zjia/boki-queuebench:sosp-ae
-    docker push zjia/boki-retwisbench:sosp-ae
-    docker push zjia/boki-beldibench:sosp-ae
+    # docker push zjia/boki:sosp-ae
+    # docker push zjia/boki-queuebench:sosp-ae
+    docker push joshuaweintraub/boki-retwisbench:sosp-ae
+    # docker push zjia/boki-beldibench:sosp-ae
 }
 
 case "$1" in

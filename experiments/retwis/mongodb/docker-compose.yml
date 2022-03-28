@@ -17,21 +17,26 @@ services:
     restart: always
 
   mongodb:
-    image: mongo:4.4.4-bionic
-    hostname: mongodb-{{.Task.Slot}}
-    command: mongod --replSet rs0
-    volumes:
-      - /mnt/storage/mongo:/data/db
+    image: mysql/mysql-server:latest
+    hostname: mysql1
+    # volumes:
+    #   - /mnt/storage/mongo:/data/db
+    environment:
+      # You can use whatever password you like
+      - MYSQL_DATABASE=boki
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=password
+      # Password for root access
+      - MYSQL_ROOT_PASSWORD=password
 
   mongodb-setup:
-    image: mongo:4.4.4-bionic
+    image: mysql/mysql-server:latest
     working_dir: /tmp/mongo
     command: /tmp/mongo/mongo_setup.sh
     depends_on:
        - mongodb
     volumes:
       - /tmp/mongo_setup.sh:/tmp/mongo/mongo_setup.sh
-      - /tmp/init_mongo_rs.js:/tmp/mongo/init_mongo_rs.js
     restart: always
 
   boki-engine:
@@ -82,12 +87,12 @@ services:
     restart: always
 
   retwis-init:
-    image: zjia/boki-retwisbench:sosp-ae
+    image: joshuaweintraub/boki-retwisbench:sosp-ae
     entrypoint: ["/tmp/boki/run_launcher", "/retwisbench-bin/main", "1"]
     volumes:
       - /mnt/inmem/boki:/tmp/boki
     environment:
-      - MONGODB_URI=mongodb://mongodb-1:27017,mongodb-2:27017,mongodb-3:27017/?replicaSet=rs0
+      - MONGODB_URI=mysql://mysql-1:27017
       - FAAS_GO_MAX_PROC_FACTOR=4
       - GOGC=200
     depends_on:
@@ -100,7 +105,7 @@ services:
     volumes:
       - /mnt/inmem/boki:/tmp/boki
     environment:
-      - MONGODB_URI=mongodb://mongodb-1:27017,mongodb-2:27017,mongodb-3:27017/?replicaSet=rs0
+      - MONGODB_URI=mysql://mysql-1:27017
       - FAAS_GO_MAX_PROC_FACTOR=4
       - GOGC=200
     depends_on:
@@ -113,7 +118,7 @@ services:
     volumes:
       - /mnt/inmem/boki:/tmp/boki
     environment:
-      - MONGODB_URI=mongodb://mongodb-1:27017,mongodb-2:27017,mongodb-3:27017/?replicaSet=rs0
+      - MONGODB_URI=mysql://mysql-1:27017
       - FAAS_GO_MAX_PROC_FACTOR=4
       - GOGC=200
     depends_on:
@@ -126,7 +131,7 @@ services:
     volumes:
       - /mnt/inmem/boki:/tmp/boki
     environment:
-      - MONGODB_URI=mongodb://mongodb-1:27017,mongodb-2:27017,mongodb-3:27017/?replicaSet=rs0
+      - MONGODB_URI=mysql://mysql-1:27017
       - FAAS_GO_MAX_PROC_FACTOR=4
       - GOGC=200
     depends_on:
@@ -139,7 +144,7 @@ services:
     volumes:
       - /mnt/inmem/boki:/tmp/boki
     environment:
-      - MONGODB_URI=mongodb://mongodb-1:27017,mongodb-2:27017,mongodb-3:27017/?replicaSet=rs0
+      - MONGODB_URI=mysql://mysql-1:27017
       - FAAS_GO_MAX_PROC_FACTOR=4
       - GOGC=200
     depends_on:
@@ -152,7 +157,7 @@ services:
     volumes:
       - /mnt/inmem/boki:/tmp/boki
     environment:
-      - MONGODB_URI=mongodb://mongodb-1:27017,mongodb-2:27017,mongodb-3:27017/?replicaSet=rs0
+      - MONGODB_URI=mysql://mysql-1:27017
       - FAAS_GO_MAX_PROC_FACTOR=4
       - GOGC=200
     depends_on:
@@ -165,7 +170,7 @@ services:
     volumes:
       - /mnt/inmem/boki:/tmp/boki
     environment:
-      - MONGODB_URI=mongodb://mongodb-1:27017,mongodb-2:27017,mongodb-3:27017/?replicaSet=rs0
+      - MONGODB_URI=mysql://mysql-1:27017
       - FAAS_GO_MAX_PROC_FACTOR=4
       - GOGC=200
     depends_on:
