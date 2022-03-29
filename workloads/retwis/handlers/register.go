@@ -98,89 +98,75 @@ func registerSlib(ctx context.Context, env types.Environment, input *RegisterInp
 }
 
 func registerMongo(ctx context.Context, client *mongo.Client, input *RegisterInput) (*RegisterOutput, error) {
-	sess, err := client.StartSession(options.Session())
+	// sess, err := client.StartSession(options.Session())
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// defer sess.EndSession(ctx)
+
+	
+		
+	//connect to the database
+
+	// db := client.Database("retwis")
+	db := utils.CreateMysqlClientOrDie(ctx)
+	userIdValue, err := utils.mysqlFetchAddCounter(sessCtx, db, 1)
+
+	//Need to override this here to get the next userIdValue
+
+	// userIdValue, err := utils.MongoFetchAddCounter(sessCtx, db, "next_user_id", 1)
 	if err != nil {
 		return nil, err
 	}
-	defer sess.EndSession(ctx)
 
-	userId, err := sess.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
-		
-		//connect to the database
-
-		// db := client.Database("retwis")
-		db := utils.mysqlFetchAddCounter(sessCtx)
-		userIdValue, err := utils.mysqlFetchAddCounter(sessCtx, db, 1)
-
-		//Need to override this here to get the next userIdValue
-
-		// userIdValue, err := utils.MongoFetchAddCounter(sessCtx, db, "next_user_id", 1)
-		if err != nil {
-			return nil, err
-		}
-
-		userId := fmt.Sprintf("%08x", userIdValue)
-		auth :=  fmt.Sprintf("%016x", rand.Uint64())} //A series of hex values - represented as varchar I guess
+	userId := fmt.Sprintf("%08x", userIdValue)
+	auth :=  fmt.Sprintf("%016x", rand.Uint64())} //A series of hex values - represented as varchar I guess
 
 
-		results, err := db.QueryContext(ctx, "INSERT INTO users(userId, username, password, auth) VALUES(?, ?, ?, ?)", userId, input.UserName, input.Password, auth)
+	results, err := db.QueryContext(ctx, "INSERT INTO users(userId, username, password, auth) VALUES(?, ?, ?, ?)", userId, input.UserName, input.Password, auth)
 
-		//Null check for query execution - TODO - Make code cleaner
-		if err != nil {
-			return nil, err
-		}
-
-		results,err := db.QueryContext("SELECT userId FROM users where username=?", input.UserName)
-
-		if err != nil {
-			fmt.Println("FAILURE IN EXECUTING QUERY")
-		}
-	
-		
-	
-		for results.Next() {
-			results.Scan(&id)
-			
-		}
-
-		if userId != id {
-			//Check to make sure that the values were inserted correctly, otherwise return error
-			return nil, err
-		}
-
-		
-
-		// userId := fmt.Sprintf("%08x", userIdValue)
-		// userBson := bson.D{
-		// 	{"userId", userId},
-		// 	{"username", input.UserName},
-		// 	{"password", input.Password},
-
-		// ------- AUTH = Random string as Auth Token ---
-	
-		// 	{"auth", fmt.Sprintf("%016x", rand.Uint64())},
-		// 	{"followers", bson.D{}},
-		// 	{"followees", bson.D{}},
-		// 	{"posts", bson.A{}},
-		// }
-
-
-		//Insert and if failure return the error.
-		// if _, err := db.Collection("users").InsertOne(sessCtx, userBson); err != nil {
-		// 	return nil, err
-		// }
-
-		
-			//Otherwise return the new userID
-		return userId, nil
-	}, utils.MongoTxnOptions())
-
+	//Null check for query execution - TODO - Make code cleaner
 	if err != nil {
+		return nil, err
+	}
+
+	results1,err1 := db.QueryContext(ctx, "SELECT userId FROM users where username=?", input.UserName)
+
+	if err1 != nil {
 		return &RegisterOutput{
 			Success: false,
 			Message: fmt.Sprintf("Mysql Insertion failed: %v", err),
 		}, nil
 	}
+
+	for results1.Next() {
+		results1.Scan(&id)			
+	}
+
+	if userId != id {
+		//Check to make sure that the values were inserted correctly, otherwise return error
+		return nil, err
+	}
+
+	// userId := fmt.Sprintf("%08x", userIdValue)
+	// userBson := bson.D{
+	// 	{"userId", userId},
+	// 	{"username", input.UserName},
+	// 	{"password", input.Password},
+
+	// ------- AUTH = Random string as Auth Token ---
+
+	// 	{"auth", fmt.Sprintf("%016x", rand.Uint64())},
+	// 	{"followers", bson.D{}},
+	// 	{"followees", bson.D{}},
+	// 	{"posts", bson.A{}},
+	// }
+
+
+	//Insert and if failure return the error.
+	// if _, err := db.Collection("users").InsertOne(sessCtx, userBson); err != nil {
+	// 	return nil, err
+	// }
 
 	return &RegisterOutput{
 		Success: true,

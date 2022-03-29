@@ -89,10 +89,6 @@ func loginSlib(ctx context.Context, env types.Environment, input *LoginInput) (*
 
 func loginMongo(ctx context.Context, client *mongo.Client, input *LoginInput) (*LoginOutput, error) {
 	//Establish connection to DB
-	db := client.Database("retwis")
-
-	//Get value of password from database
-	
 	
 	// var user bson.M
 	// if err := db.Collection("users").FindOne(ctx, bson.D{{"username", input.UserName}}).Decode(&user); err != nil {
@@ -102,18 +98,36 @@ func loginMongo(ctx context.Context, client *mongo.Client, input *LoginInput) (*
 	// 	}, nil
 	// }
 
+	db := utils.CreateMysqlClientOrDie(ctx)
+
+	results, err := db.QueryContext(ctx, "SELECT userId, password, auth FROM users WHERE username=?", input.UserName)
+
+	type user struct {
+		userId int,
+		password string
+		auth string
+	}	
+
+	var userInfo user
+
+	for results.Next() {
+		results.Scan(&userInfo.userId, &userInfo.password, &userInfo.auth)
+	}
+
+
 	//if your password doesn't match the intended password, then return failure.
-	if input.Password != user["password"].(string) {
+	if input.Password != userInfo.password {
 		return &LoginOutput{
 			Success: false,
 			Message: "Incorrect password",
 		}, nil
 	}
 
+	//Otherwise return successful login
 	return &LoginOutput{
 		Success: true,
-		UserId:  user["userId"].(string),
-		Auth:    user["auth"].(string),
+		UserId:  userInfo.userId,
+		Auth:    userInfo.auth,
 	}, nil
 }
 

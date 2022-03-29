@@ -94,33 +94,38 @@ func followSlib(ctx context.Context, env types.Environment, input *FollowInput) 
 }
 
 func followMongo(ctx context.Context, client *mongo.Client, input *FollowInput) (*FollowOutput, error) {
-	sess, err := client.StartSession(options.Session())
-	if err != nil {
-		return nil, err
-	}
-	defer sess.EndSession(ctx)
+	// sess, err := client.StartSession(options.Session())
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// defer sess.EndSession(ctx)
 
-	_, err = sess.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
-		coll := client.Database("retwis").Collection("users")
-		user1Filter := bson.D{{"userId", input.UserId}}
-		user2Filter := bson.D{{"userId", input.FolloweeId}}
-		var user1Update bson.D
-		var user2Update bson.D
-		if input.Unfollow {
-			user1Update = bson.D{{"$unset", bson.D{{fmt.Sprintf("followees.%s", input.FolloweeId), ""}}}}
-			user2Update = bson.D{{"$unset", bson.D{{fmt.Sprintf("followers.%s", input.UserId), ""}}}}
-		} else {
-			user1Update = bson.D{{"$set", bson.D{{fmt.Sprintf("followees.%s", input.FolloweeId), true}}}}
-			user2Update = bson.D{{"$set", bson.D{{fmt.Sprintf("followers.%s", input.UserId), true}}}}
-		}
-		if _, err := coll.UpdateOne(sessCtx, user1Filter, user1Update); err != nil {
-			return nil, err
-		}
-		if _, err := coll.UpdateOne(sessCtx, user2Filter, user2Update); err != nil {
-			return nil, err
-		}
-		return nil, nil
-	}, utils.MongoTxnOptions())
+	db := utils.CreateMysqlClientOrDie(ctx)
+
+
+	// _, err = sess.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
+	// 	coll := client.Database("retwis").Collection("users")
+	// 	user1Filter := bson.D{{"userId", input.UserId}}
+	// 	user2Filter := bson.D{{"userId", input.FolloweeId}}
+	// 	var user1Update bson.D
+	// 	var user2Update bson.D
+	// 	if input.Unfollow {
+	// 		user1Update = bson.D{{"$unset", bson.D{{fmt.Sprintf("followees.%s", input.FolloweeId), ""}}}}
+	// 		user2Update = bson.D{{"$unset", bson.D{{fmt.Sprintf("followers.%s", input.UserId), ""}}}}
+	// 	} else {
+	// 		user1Update = bson.D{{"$set", bson.D{{fmt.Sprintf("followees.%s", input.FolloweeId), true}}}}
+	// 		user2Update = bson.D{{"$set", bson.D{{fmt.Sprintf("followers.%s", input.UserId), true}}}}
+	// 	}
+	// 	if _, err := coll.UpdateOne(sessCtx, user1Filter, user1Update); err != nil {
+	// 		return nil, err
+	// 	}
+	// 	if _, err := coll.UpdateOne(sessCtx, user2Filter, user2Update); err != nil {
+	// 		return nil, err
+	// 	}
+	// 	return nil, nil
+	// }, utils.MongoTxnOptions())
+
+	
 
 	if err != nil {
 		return &FollowOutput{

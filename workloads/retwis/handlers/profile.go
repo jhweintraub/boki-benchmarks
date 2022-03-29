@@ -75,48 +75,83 @@ func profileSlib(ctx context.Context, env types.Environment, input *ProfileInput
 }
 
 func profileMongo(ctx context.Context, client *mongo.Client, input *ProfileInput) (*ProfileOutput, error) {
-	db := client.Database("retwis")
+	// db := client.Database("retwis")
 
-	var user bson.M
+	db := utils.CreateMysqlClientOrDie(ctx)
 
-	//Check to see that user exists based on userId
-	if err := db.Collection("users").FindOne(ctx, bson.D{{"userId", input.UserId}}).Decode(&user); err != nil {
+	results, err := db.QueryContext(ctx, "SELECT * FROM users WHERE userId=?", userId)
+
+	//Optimized one-query to get both count and information
+
+	profileResults, err1 := db.QueryContext(ctx, "SELECT userId, username, followers, following, posts, COUNT(*) FROM users where userId=?", input.UserId)
+
+	type user struct {
+		userId int,
+		username string,
+		followers int,
+		following int,
+		posts int,
+		count int
+	}	
+
+	var userInfo user
+
+	//Loop through the results rows - There should only be one
+	for results.Next() {
+		results.Scan(&userInfo.userId, &userInfo.username, &userInfo.followers, &userInfo.following, &userInfo.posts, &userInfo.count)
+	}
+
+	//If it errored or there just wasn't the one row we're looking for
+	if (userInfo.count != 1 || err1 != nil) {
 		return &ProfileOutput{
 			Success: false,
 			Message: fmt.Sprintf("Mongo failed: %v", err),
 		}, nil
 	}
 
+	// var user bson.M
+
+	//Check to see that user exists based on userId
+	// if err := db.Collection("users").FindOne(ctx, bson.D{{"userId", input.UserId}}).Decode(&user); err != nil {
+		// return &ProfileOutput{
+		// 	Success: false,
+		// 	Message: fmt.Sprintf("Mongo failed: %v", err),
+		// }, nil
+	// }
+
 	output := &ProfileOutput{Success: true}
 
 	//Acquire Username - Simple query based on UserID
-	if value, ok := user["username"].(string); ok {
-		output.UserName = value
-	}
+	// if value, ok := user["username"].(string); ok {
+	// 	output.UserName = value
+	// }
+	output.UserName = userInfo.username
+	output.NumFollowers = userInfo.followers
+	output.NumFollowees = userInfo.following
+	output.NumPosts = userInfo.posts
 
-	//Acquire list of Followers - Potentially more complex query requiring count()
-	if value, ok := user["followers"].(bson.M); ok {
-		output.NumFollowers = len(value)
-	}
+	// //Acquire list of Followers - Potentially more complex query requiring count()
+	// if value, ok := user["followers"].(bson.M); ok {
+	// 	output.NumFollowers = len(value)
+	// }
 
-	//Acquire list of people following - Potentially more complex query requiring count()
-	if value, ok := user["followees"].(bson.M); ok {
-		output.NumFollowees = len(value)
-	}
+	// //Acquire list of people following - Potentially more complex query requiring count()
+	// if value, ok := user["followees"].(bson.M); ok {
+	// 	output.NumFollowees = len(value)
+	// }
 
-	//Acquire number of posts
-	if value, ok := user["posts"].(bson.A); ok {
-		output.NumPosts = len(value)
-	}
+	// //Acquire number of posts
+	// if value, ok := user["posts"].(bson.A); ok {
+	// 	output.NumPosts = len(value)
+	// }
 
-	/*
-	Prediction - MySQL is almost definitely going to be slower because it requires either 
+	
+	/*Prediction - MySQL is almost definitely going to be slower because it requires either 
 	very complex queries, more tables, or more simple-queries and the additional time that takes is just
 	going to be much longer 
 
 	Question - Add another table for "metadata" that includes numbers of posts, followers, etc. - speeds up retrieval time
-	but at the cost of insertion times
-	/*
+	but at the cost of insertion times */
 
 	return output, nil
 }
