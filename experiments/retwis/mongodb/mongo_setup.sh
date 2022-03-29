@@ -13,5 +13,7 @@ fi
 
 mysql -u root --password=password -h mysql1
 
+//TODO: 
+
 
 sleep infinity

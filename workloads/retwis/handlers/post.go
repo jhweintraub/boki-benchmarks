@@ -126,16 +126,20 @@ func postMongo(ctx context.Context, client *mongo.Client, input *PostInput) (*Po
 		postColl := db.Collection("posts")
 		usersColl := db.Collection("users")
 
+		//Find user info
 		var user bson.M
 		if err := usersColl.FindOne(sessCtx, bson.D{{"userId", input.UserId}}).Decode(&user); err != nil {
 			return nil, err
 		}
 
+		//Post info
 		postBson := bson.D{
 			{"userId", input.UserId},
 			{"userName", user["username"].(string)},
 			{"body", input.Body},
 		}
+
+		//Insert the above info into the database
 		var postId primitive.ObjectID
 		if result, err := postColl.InsertOne(sessCtx, postBson); err != nil {
 			return nil, err
@@ -143,6 +147,8 @@ func postMongo(ctx context.Context, client *mongo.Client, input *PostInput) (*Po
 			postId = result.InsertedID.(primitive.ObjectID)
 		}
 
+		//Pushes the post info to all the followers so all posts from people they subscribe to can be found
+		//I think I can remove this because i'm overriding the other functionality this relies on
 		if value, ok := user["followers"].(bson.M); ok {
 			followers := make([]string, 0, 4)
 			for follower, _ := range value {

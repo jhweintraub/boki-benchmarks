@@ -102,6 +102,14 @@ func followMongo(ctx context.Context, client *mongo.Client, input *FollowInput) 
 
 	db := utils.CreateMysqlClientOrDie(ctx)
 
+	if input.Unfollow() {
+
+	}
+
+	//TODO
+
+	//Unfollow the person by removing from the folliwing table
+	//decrement the userId "following" and increment the followeeId "followers"
 
 	// _, err = sess.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
 	// 	coll := client.Database("retwis").Collection("users")
@@ -125,7 +133,7 @@ func followMongo(ctx context.Context, client *mongo.Client, input *FollowInput) 
 	// 	return nil, nil
 	// }, utils.MongoTxnOptions())
 
-	
+
 
 	if err != nil {
 		return &FollowOutput{
