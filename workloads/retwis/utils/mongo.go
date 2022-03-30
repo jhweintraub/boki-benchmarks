@@ -7,6 +7,9 @@ import (
 	"os"
 	"time"
 
+	"database/sql"
+	_ "github.com/go-sql-driver/mysql"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -52,7 +55,7 @@ func CreateMongoClientOrDie(ctx context.Context) *mongo.Client {
 	}
 }
 
-func CreateMysqlClientOrDie(ctx context.Context) *mysql.DB {
+func CreateMysqlClientOrDie(ctx context.Context) (*sql.DB) {
 	uri := getMysqlUri()
 
 	//Apply Contexts
@@ -66,9 +69,13 @@ func CreateMysqlClientOrDie(ctx context.Context) *mysql.DB {
 		return nil
 	}
 
-	else {
-		return db
+	if err := db.PingContext(newCtx); err != nil {
+		log.Fatalf("unable to connect to database: %v", err)
 	}
+
+	
+	return db
+	
 }
 
 func MongoTxnOptions() *options.TransactionOptions {
@@ -102,12 +109,12 @@ func MongoFetchAddCounter(ctx context.Context, db *mongo.Database, name string, 
 		return 0, fmt.Errorf("%s value cannot be converted to int32", name)
 	}
 
-	Determine what the latest value is so that you can create a new UserID		
+	// Determine what the latest value is so that you can create a new UserID		
 	
 }
  //TODO: Determine parameters to not re-establish connections
  //TODO: delta?
-func mysqlFetchAddCounter(ctx context.Context, db *mysql, delta int) (int, error) {
+func MysqlFetchAddCounter(ctx context.Context, db *sql.DB, delta int) (int, error) {
 
 	//Workaround - Count the number of rows and the answer will be the userID of the next-user cause mysql starts @0
 	//Makes Query within Context
@@ -125,7 +132,7 @@ func mysqlFetchAddCounter(ctx context.Context, db *mysql, delta int) (int, error
 	}
 	
 	if err != nil {
-		return 0, fmt.Errorf("%s value cannot be converted to int32", name)
+		return 0, fmt.Errorf("%s value cannot be converted to int32")
 	}
 	//Return error if necesarry
 

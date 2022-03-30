@@ -10,9 +10,9 @@ import (
 	"cs.utexas.edu/zjia/faas/slib/statestore"
 	"cs.utexas.edu/zjia/faas/types"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	_ "go.mongodb.org/mongo-driver/bson"
+	 "go.mongodb.org/mongo-driver/mongo"
+	_ "go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type FollowInput struct {
@@ -102,9 +102,36 @@ func followMongo(ctx context.Context, client *mongo.Client, input *FollowInput) 
 
 	db := utils.CreateMysqlClientOrDie(ctx)
 
-	if input.Unfollow() {
+	if input.Unfollow {
+		// results, err := db.QueryContext(ctx, "INSERT INTO users(userId, username, password, auth) VALUES(?, ?, ?, ?)", userId, input.UserName, input.Password, auth)
+		_, err := db.QueryContext(ctx, "DELETE FROM following where followedUser=? AND followingUser=?", input.UserId, input.FolloweeId)
+		_, err1 := db.QueryContext(ctx, "UPDATE users SET followers = followers - 1 WHERE userId=?", input.UserId)
+		_, err2 := db.QueryContext(ctx, "UPDATE users SET following = following - 1 WHERE userId=?", input.FolloweeId)
 
+		if (err != nil || err1 != nil || err2 != nil ) {
+			return &FollowOutput{
+				Success: true,
+				Message: fmt.Sprintf("Mysql Updates failed: %v %v %v", err, err1, err2),
+				}, nil
+		}
+
+	} else {
+		_, err := db.QueryContext(ctx, "INSERT INTO following VALUES ((SELECT userId FROM users WHERE userId=?), (SELECT userId FROM users WHERE userId=?))", input.FolloweeId, input.UserId)
+		_, err1 := db.QueryContext(ctx, "UPDATE users SET followers = followers + 1 WHERE userId=?", input.UserId)
+		_, err2 := db.QueryContext(ctx, "UPDATE users SET following = following + 1 WHERE userId=?", input.FolloweeId)
+	
+
+		if (err != nil || err1 != nil || err2 != nil ) {
+			return &FollowOutput{
+			Success: true,
+			Message: fmt.Sprintf("Mysql Updates failed: %v %v %v", err, err1, err2),
+			}, nil
+		}
 	}
+
+
+	//TODO: Replace later
+	// err := nil
 
 	//TODO
 
@@ -134,13 +161,15 @@ func followMongo(ctx context.Context, client *mongo.Client, input *FollowInput) 
 	// }, utils.MongoTxnOptions())
 
 
+		//Uncomment out when done with this file
+	// if err != nil {
+	// 	return &FollowOutput{
+	// 		Success: false,
+	// 		Message: fmt.Sprintf("Mongo failed: %v", err),
+	// 	}, nil
+	// }
 
-	if err != nil {
-		return &FollowOutput{
-			Success: false,
-			Message: fmt.Sprintf("Mongo failed: %v", err),
-		}, nil
-	}
+
 	return &FollowOutput{
 		Success: true,
 	}, nil

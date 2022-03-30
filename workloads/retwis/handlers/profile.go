@@ -10,8 +10,11 @@ import (
 	"cs.utexas.edu/zjia/faas/slib/statestore"
 	"cs.utexas.edu/zjia/faas/types"
 
-	"go.mongodb.org/mongo-driver/bson"
+	_ "go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+
+	_ "database/sql"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type ProfileInput struct {
@@ -79,18 +82,16 @@ func profileMongo(ctx context.Context, client *mongo.Client, input *ProfileInput
 
 	db := utils.CreateMysqlClientOrDie(ctx)
 
-	results, err := db.QueryContext(ctx, "SELECT * FROM users WHERE userId=?", userId)
-
 	//Optimized one-query to get both count and information
 
-	profileResults, err1 := db.QueryContext(ctx, "SELECT userId, username, followers, following, posts, COUNT(*) FROM users where userId=?", input.UserId)
+	results, err := db.QueryContext(ctx, "SELECT userId, username, followers, following, posts, COUNT(*) FROM users where userId=?", input.UserId)
 
 	type user struct {
-		userId int,
-		username string,
-		followers int,
-		following int,
-		posts int,
+		userId int
+		username string
+		followers int
+		following int
+		posts int
 		count int
 	}	
 
@@ -102,10 +103,10 @@ func profileMongo(ctx context.Context, client *mongo.Client, input *ProfileInput
 	}
 
 	//If it errored or there just wasn't the one row we're looking for
-	if (userInfo.count != 1 || err1 != nil) {
+	if (userInfo.count != 1 || err != nil) {
 		return &ProfileOutput{
 			Success: false,
-			Message: fmt.Sprintf("Mongo failed: %v", err),
+			Message: fmt.Sprintf("Mongo failed: %v %v", userInfo.count, err),
 		}, nil
 	}
 

@@ -11,7 +11,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"database/sql"
+	_ "database/sql"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -67,10 +67,10 @@ func initMongo(ctx context.Context, client *mongo.Client) error {
 
 	// return nil
 
-	db := CreateMysqlClientOrDie(ctx)
+	db := utils.CreateMysqlClientOrDie(ctx)
 
 	fmt.Println(db)
-	fmt.Println(err)
+	// fmt.Println(err)
 
 	db.QueryContext(ctx, "DROP TABLE posts;")
 	db.QueryContext(ctx, "DROP TABLE following;")
@@ -120,6 +120,8 @@ func initMongo(ctx context.Context, client *mongo.Client) error {
 
 	// 	FOREIGN KEY (userID) REFERENCES users(userId)
 	// )
+
+	return nil
 }
 
 func (h *initHandler) Call(ctx context.Context, input []byte) ([]byte, error) {

@@ -5,15 +5,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"strconv"
 
 	"cs.utexas.edu/zjia/faas-retwis/utils"
 
 	"cs.utexas.edu/zjia/faas/slib/statestore"
 	"cs.utexas.edu/zjia/faas/types"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	_ "go.mongodb.org/mongo-driver/bson"
+	 "go.mongodb.org/mongo-driver/mongo"
+	_ "go.mongodb.org/mongo-driver/mongo/options"
+
+	_ "database/sql"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type RegisterInput struct {
@@ -110,27 +114,27 @@ func registerMongo(ctx context.Context, client *mongo.Client, input *RegisterInp
 
 	// db := client.Database("retwis")
 	db := utils.CreateMysqlClientOrDie(ctx)
-	userIdValue, err := utils.mysqlFetchAddCounter(sessCtx, db, 1)
+	userIdValue, err1 := utils.MysqlFetchAddCounter(ctx, db, 1)
 
 	//Need to override this here to get the next userIdValue
 
 	// userIdValue, err := utils.MongoFetchAddCounter(sessCtx, db, "next_user_id", 1)
-	if err != nil {
-		return nil, err
+	if err1 != nil {
+		return nil, err1
 	}
 
 	userId := fmt.Sprintf("%08x", userIdValue)
-	auth :=  fmt.Sprintf("%016x", rand.Uint64())} //A series of hex values - represented as varchar I guess
+	auth :=  fmt.Sprintf("%016x", rand.Uint64()) //A series of hex values - represented as varchar I guess
 
 
-	results, err := db.QueryContext(ctx, "INSERT INTO users(userId, username, password, auth) VALUES(?, ?, ?, ?)", userId, input.UserName, input.Password, auth)
+	_, err := db.QueryContext(ctx, "INSERT INTO users(userId, username, password, auth) VALUES(?, ?, ?, ?)", userId, input.UserName, input.Password, auth)
 
 	//Null check for query execution - TODO - Make code cleaner
 	if err != nil {
 		return nil, err
 	}
 
-	results1,err1 := db.QueryContext(ctx, "SELECT userId FROM users where username=?", input.UserName)
+	results1 ,err1 := db.QueryContext(ctx, "SELECT userId FROM users where username=?", input.UserName)
 
 	if err1 != nil {
 		return &RegisterOutput{
@@ -139,11 +143,13 @@ func registerMongo(ctx context.Context, client *mongo.Client, input *RegisterInp
 		}, nil
 	}
 
+	var id int
+
 	for results1.Next() {
 		results1.Scan(&id)			
 	}
 
-	if userId != id {
+	if userId != strconv.Itoa(id) {
 		//Check to make sure that the values were inserted correctly, otherwise return error
 		return nil, err
 	}
@@ -172,7 +178,7 @@ func registerMongo(ctx context.Context, client *mongo.Client, input *RegisterInp
 		Success: true,
 
 		//Guessing this is like a toString() type-method but not entirely sure
-		UserId:  userId.(string),
+		UserId:  userId,
 	}, nil
 }
 

@@ -4,14 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
 
 	"cs.utexas.edu/zjia/faas-retwis/utils"
 
 	"cs.utexas.edu/zjia/faas/slib/statestore"
 	"cs.utexas.edu/zjia/faas/types"
 
-	"go.mongodb.org/mongo-driver/bson"
+	_ "go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+
+	_ "database/sql"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type LoginInput struct {
@@ -102,8 +107,15 @@ func loginMongo(ctx context.Context, client *mongo.Client, input *LoginInput) (*
 
 	results, err := db.QueryContext(ctx, "SELECT userId, password, auth FROM users WHERE username=?", input.UserName)
 
+	if err != nil {
+		return &LoginOutput{
+			Success: false,
+			Message: fmt.Sprintf("Mysql selected failed: %v", err),
+		}, err
+	}
+
 	type user struct {
-		userId int,
+		userId int
 		password string
 		auth string
 	}	
@@ -126,7 +138,7 @@ func loginMongo(ctx context.Context, client *mongo.Client, input *LoginInput) (*
 	//Otherwise return successful login
 	return &LoginOutput{
 		Success: true,
-		UserId:  userInfo.userId,
+		UserId:  strconv.Itoa(userInfo.userId),
 		Auth:    userInfo.auth,
 	}, nil
 }

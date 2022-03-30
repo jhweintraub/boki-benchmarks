@@ -11,14 +11,17 @@ import (
 	"cs.utexas.edu/zjia/faas/slib/statestore"
 	"cs.utexas.edu/zjia/faas/types"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	_ "go.mongodb.org/mongo-driver/bson"
+	_ "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	_ "go.mongodb.org/mongo-driver/mongo/options"
 
 	"crypto/md5"
 	"encoding/hex"
 	"time"
+
+	_ "database/sql"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type PostInput struct {
@@ -139,25 +142,25 @@ func postMongo(ctx context.Context, client *mongo.Client, input *PostInput) (*Po
 		// }
 
 		//Get username
-		profileResults, err1 := db.QueryContext(ctx, "SELECT username FROM users where userId=?", input.UserId)
- 
-		var username string
+	profileResults, err1 := db.QueryContext(ctx, "SELECT username FROM users where userId=?", input.UserId)
 
-		for profileResults.Next() {
-			profileResults.Scan(&username)
-		}
+	var username string
 
-		currentTime := time.Now()
-		data := []byte(input.Body + UserId + currentTime.String())
-		hash := md5.Sum(data)
-		hashSum := hex.EncodeToString(hash[:10])
+	for profileResults.Next() {
+		profileResults.Scan(&username)
+	}
 
-		//Insert into posts table
-		insertPost, err2 := db.QueryContext(ctx, "INSERT INTO posts values((SELECT userId from users where userId=?), (SELECT username from users where userId=?), ? , NOW(), ?);", input.UserId, input.UserId, input.Body, hashSum)
+	currentTime := time.Now()
+	data := []byte(input.Body + input.UserId + currentTime.String())
+	hash := md5.Sum(data)
+	hashSum := hex.EncodeToString(hash[:10])
+
+	//Insert into posts table
+	_, err2 := db.QueryContext(ctx, "INSERT INTO posts values((SELECT userId from users where userId=?), (SELECT username from users where userId=?), ? , NOW(), ?);", input.UserId, input.UserId, input.Body, hashSum)
 
 
-		//Update the number of posts for a user-object
-		updatePosts, err3 := db.QueryContext(ctx, "UPDATE users SET posts = posts + 1 WHERE userId=?", input.UserId)
+	//Update the number of posts for a user-object
+	_, err3 := db.QueryContext(ctx, "UPDATE users SET posts = posts + 1 WHERE userId=?", input.UserId)
 
 		//Post info
 		// postBson := bson.D{
@@ -207,10 +210,10 @@ func postMongo(ctx context.Context, client *mongo.Client, input *PostInput) (*Po
 		// return nil, nil
 	// }, utils.MongoTxnOptions())
 
-	if (err != nil || err2 != nil || err3 != nill) {
+	if (err1 != nil || err2 != nil || err3 != nil) {
 		return &PostOutput{
 			Success: false,
-			Message: fmt.Sprintf("Mysql Updates failed: %v", err),
+			Message: fmt.Sprintf("Mysql Updates failed: %v %v %v", err1, err2, err3),
 		}, nil
 	}
 

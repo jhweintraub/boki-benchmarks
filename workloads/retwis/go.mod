@@ -8,6 +8,7 @@ require (
 	github.com/golang/snappy v0.0.2 // indirect
 	github.com/montanaflynn/stats v0.6.3
 	go.mongodb.org/mongo-driver v1.4.6
+	github.com/go-sql-driver/mysql v1.6.0
 )
 
 replace cs.utexas.edu/zjia/faas => /src/boki/worker/golang
