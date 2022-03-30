@@ -4,15 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
 
 	"cs.utexas.edu/zjia/faas-retwis/utils"
 
 	"cs.utexas.edu/zjia/faas/slib/statestore"
 	"cs.utexas.edu/zjia/faas/types"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
+	_ "go.mongodb.org/mongo-driver/bson"
+	_ "go.mongodb.org/mongo-driver/bson/primitive"
+	  "go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	_ "database/sql"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type PostListInput struct {
@@ -107,78 +113,89 @@ func postListSlib(ctx context.Context, env types.Environment, input *PostListInp
 }
 
 func postListMongo(ctx context.Context, client *mongo.Client, input *PostListInput) (*PostListOutput, error) {
+	//Gets list of posts based on the userId or nothing if not specified? It's a retrieval method i'm guessing
+
+
+	//Unnecesarry Session Info
 	sess, err := client.StartSession(options.Session())
-	if err != nil {
-		return nil, err
-	}
+	// if err != nil {
+	// 	return nil, err
+	// }
 	defer sess.EndSession(ctx)
 
-	db := client.Database("retwis")
+	// db := client.Database("retwis")
+
+	db := utils.CreateMysqlClientOrDie(ctx)
+
+
+	//Wrapper for the session-posts
+	// posts, err := sess.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
+		
+	//Get the databases
+	// postColl := db.Collection("posts")
+	// usersColl := db.Collection("users")
+
+	//Allocate space for an array of empty interfaces of max size kMaxReturnPosts
+
+	var query = ""
+
 
 	posts, err := sess.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
-		postColl := db.Collection("posts")
-		usersColl := db.Collection("users")
+
 		posts := make([]interface{}, 0, kMaxReturnPosts)
 
+
+		//If not UserId is specified - WHAT???
 		if input.UserId == "" {
-			opts := options.Find()
-			opts.SetSort(bson.D{{"_id", -1}})
-			opts.SetSkip(int64(input.Skip))
-			opts.SetLimit(kMaxReturnPosts)
-			cursor, err := postColl.Find(sessCtx, bson.D{}, opts)
-			if err != nil {
-				return nil, err
-			}
-			var results []bson.M
-			err = cursor.All(sessCtx, &results)
-			if err != nil {
-				return nil, err
-			}
-			for _, post := range results {
-				posts = append(posts, map[string]string{
-					"body": post["body"].(string),
-					"user": post["userName"].(string),
-				})
-				if len(posts) == kMaxReturnPosts {
-					break
-				}
-			}
+			query = "SELECT username, post FROM posts LIMIT ?"
+		//If user is specified
 		} else {
-			var user bson.M
-			if err := usersColl.FindOne(sessCtx, bson.D{{"userId", input.UserId}}).Decode(&user); err != nil {
-				return nil, err
-			}
-			elements := user["posts"].(bson.A)
-			if len(elements) > input.Skip {
-				end := len(elements) - input.Skip
-				for i := end - 1; i >= 0; i-- {
-					postId := elements[i]
-					var post bson.M
-					err := postColl.FindOne(sessCtx, bson.D{{"_id", postId}}).Decode(&post)
-					if err != nil {
-						return nil, err
-					}
-					posts = append(posts, map[string]string{
-						"body": post["body"].(string),
-						"user": post["userName"].(string),
-					})
-					if len(posts) == kMaxReturnPosts {
-						break
-					}
-				}
+			query = "SELECT username, post FROM posts where userId = " + input.UserId + " LIMIT " + strconv.Itoa(kMaxReturnPosts)
+		}
+
+		//Because we can do a complex query where we get the posts via user-id we can actually cut out some of these steps
+		results, err := db.QueryContext(ctx, query)
+
+		if err != nil {
+			return nil, err
+		}
+
+		type post struct {
+			username string
+			body string
+		}	
+
+		var post_query_results post
+
+
+		for results.Next() {
+			results.Scan(&post_query_results.username, &post_query_results.body)
+			posts = append(posts, map[string]string{
+				"body": post_query_results.body,
+				"user": post_query_results.username,
+			})
+
+			if len(posts) == kMaxReturnPosts {
+				break
 			}
 		}
+
+		
 
 		return posts, nil
 	}, utils.MongoTxnOptions())
 
+		// return posts, nil
+	// }, utils.MongoTxnOptions())
+
 	if err != nil {
 		return &PostListOutput{
 			Success: false,
-			Message: fmt.Sprintf("Mongo failed: %v", err),
+			Message: fmt.Sprintf("MySQL failed: %v", err),
 		}, nil
 	}
 
+	//Return the array of things we already populated
 	return &PostListOutput{
 		Success: true,
 		Posts:   posts.([]interface{}),
