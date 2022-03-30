@@ -113,7 +113,7 @@ func mysqlFetchAddCounter(ctx context.Context, db *mysql, delta int) (int, error
 	//Makes Query within Context
 	results,err := db.QueryContext(ctx, "SELECT COUNT(*) FROM users")
 	defer results.Close()
-	fmt.Println(results)
+	// fmt.Println(results)
 
 	var (
 		id int

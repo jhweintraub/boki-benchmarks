@@ -15,6 +15,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"crypto/md5"
+	"encoding/hex"
+	"time"
 )
 
 type PostInput struct {
@@ -114,75 +118,99 @@ func postSlib(ctx context.Context, env types.Environment, input *PostInput) (*Po
 }
 
 func postMongo(ctx context.Context, client *mongo.Client, input *PostInput) (*PostOutput, error) {
-	sess, err := client.StartSession(options.Session())
-	if err != nil {
-		return nil, err
-	}
-	defer sess.EndSession(ctx)
+	// sess, err := client.StartSession(options.Session())
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// defer sess.EndSession(ctx)
 
-	db := client.Database("retwis")
+	// db := client.Database("retwis")
 
-	_, err = sess.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
-		postColl := db.Collection("posts")
-		usersColl := db.Collection("users")
+	db := utils.CreateMysqlClientOrDie(ctx)
 
-		//Find user info
-		var user bson.M
-		if err := usersColl.FindOne(sessCtx, bson.D{{"userId", input.UserId}}).Decode(&user); err != nil {
-			return nil, err
+	// _, err = sess.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
+		// postColl := db.Collection("posts")
+		// usersColl := db.Collection("users")
+
+		//Find user info - we need the username
+		// var user bson.M
+		// if err := usersColl.FindOne(sessCtx, bson.D{{"userId", input.UserId}}).Decode(&user); err != nil {
+		// 	return nil, err
+		// }
+
+		//Get username
+		profileResults, err1 := db.QueryContext(ctx, "SELECT username FROM users where userId=?", input.UserId)
+ 
+		var username string
+
+		for profileResults.Next() {
+			profileResults.Scan(&username)
 		}
+
+		currentTime := time.Now()
+		data := []byte(input.Body + UserId + currentTime.String())
+		hash := md5.Sum(data)
+		hashSum := hex.EncodeToString(hash[:10])
+
+		//Insert into posts table
+		insertPost, err2 := db.QueryContext(ctx, "INSERT INTO posts values((SELECT userId from users where userId=?), (SELECT username from users where userId=?), ? , NOW(), ?);", input.UserId, input.UserId, input.Body, hashSum)
+
+
+		//Update the number of posts for a user-object
+		updatePosts, err3 := db.QueryContext(ctx, "UPDATE users SET posts = posts + 1 WHERE userId=?", input.UserId)
 
 		//Post info
-		postBson := bson.D{
-			{"userId", input.UserId},
-			{"userName", user["username"].(string)},
-			{"body", input.Body},
-		}
+		// postBson := bson.D{
+		// 	{"userId", input.UserId},
+		// 	{"userName", user["username"].(string)},
+		// 	{"body", input.Body},
+		// }
 
 		//Insert the above info into the database
-		var postId primitive.ObjectID
-		if result, err := postColl.InsertOne(sessCtx, postBson); err != nil {
-			return nil, err
-		} else {
-			postId = result.InsertedID.(primitive.ObjectID)
-		}
+		// var postId primitive.ObjectID
+		// if result, err := postColl.InsertOne(sessCtx, postBson); err != nil {
+		// 	return nil, err
+		// } else {
+		// 	postId = result.InsertedID.(primitive.ObjectID)
+		// }
 
 		//Pushes the post info to all the followers so all posts from people they subscribe to can be found
 		//I think I can remove this because i'm overriding the other functionality this relies on
-		if value, ok := user["followers"].(bson.M); ok {
-			followers := make([]string, 0, 4)
-			for follower, _ := range value {
-				followers = append(followers, follower)
-			}
-			rand.Shuffle(len(followers), func(i, j int) {
-				followers[i], followers[j] = followers[j], followers[i]
-			})
-			if len(followers) > kMaxNotifyUsers {
-				followers = followers[0:kMaxNotifyUsers]
-			}
-			update := bson.M{
-				"$push": bson.M{
-					"posts": bson.M{
-						"$each":  bson.A{postId},
-						"$slice": -kUserPostListLimit,
-					},
-				},
-			}
-			for _, follower := range followers {
-				_, err := usersColl.UpdateOne(sessCtx, bson.D{{"userId", follower}}, update)
-				if err != nil {
-					return nil, err
-				}
-			}
-		}
 
-		return nil, nil
-	}, utils.MongoTxnOptions())
+		// if value, ok := user["followers"].(bson.M); ok {
+		// 	followers := make([]string, 0, 4)
+		// 	for follower, _ := range value {
+		// 		followers = append(followers, follower)
+		// 	}
+		// 	rand.Shuffle(len(followers), func(i, j int) {
+		// 		followers[i], followers[j] = followers[j], followers[i]
+		// 	})
+		// 	if len(followers) > kMaxNotifyUsers {
+		// 		followers = followers[0:kMaxNotifyUsers]
+		// 	}
+		// 	update := bson.M{
+		// 		"$push": bson.M{
+		// 			"posts": bson.M{
+		// 				"$each":  bson.A{postId},
+		// 				"$slice": -kUserPostListLimit,
+		// 			},
+		// 		},
+		// 	}
+		// 	for _, follower := range followers {
+		// 		_, err := usersColl.UpdateOne(sessCtx, bson.D{{"userId", follower}}, update)
+		// 		if err != nil {
+		// 			return nil, err
+		// 		}
+		// 	}
+		// }
 
-	if err != nil {
+		// return nil, nil
+	// }, utils.MongoTxnOptions())
+
+	if (err != nil || err2 != nil || err3 != nill) {
 		return &PostOutput{
 			Success: false,
-			Message: fmt.Sprintf("Mongo failed: %v", err),
+			Message: fmt.Sprintf("Mysql Updates failed: %v", err),
 		}, nil
 	}
 

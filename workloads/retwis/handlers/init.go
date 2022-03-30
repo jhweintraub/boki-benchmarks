@@ -77,13 +77,13 @@ func initMongo(ctx context.Context, client *mongo.Client) error {
 	db.QueryContext(ctx, "DROP TABLE logins;")
 	db.QueryContext(ctx, "DROP TABLE users;")
 
-	db.Query("CREATE TABLE users (userId int PRIMARY KEY, username varchar(255), password varchar(255), auth varchar(255),followers int, following int, posts int);");
+	db.Query("CREATE TABLE IF NOT EXISTS users (userId int PRIMARY KEY, username varchar(255), password varchar(255), auth varchar(255),followers int, following int, posts int);");
 	
-	db.QueryContext(ctx, "CREATE TABLE following( followingUser int, followedUser int, FOREIGN KEY (followedUser) REFERENCES users(userId), FOREIGN KEY (followingUser) REFERENCES users(userId) );")
+	db.QueryContext(ctx, "CREATE TABLE IF NOT EXISTS following ( followingUser int, followedUser int, FOREIGN KEY (followedUser) REFERENCES users(userId), FOREIGN KEY (followingUser) REFERENCES users(userId) );")
 
-	db.QueryContext(ctx, "CREATE TABLE posts ( userID int, post varchar(255), dt DATETIME, FOREIGN KEY (userID) REFERENCES users(userId) )")
+	db.QueryContext(ctx, "CREATE TABLE IF NOT EXISTS posts(userID int, username varchar(255), post varchar(255), dt DATETIME, postId varchar(255), FOREIGN KEY (userID) REFERENCES users(userId));")
 
-	db.QueryContext(ctx, "CREATE TABLE logins ( userID int, dt DATETIME, successful BOOLEAN, FOREIGN KEY (userID) REFERENCES users(userId) )")
+	db.QueryContext(ctx, "CREATE TABLE IF NOT EXISTS logins ( userID int, dt DATETIME, successful BOOLEAN, FOREIGN KEY (userID) REFERENCES users(userId) )")
 
 	//Created the database from the follwing-schema
 
@@ -91,7 +91,10 @@ func initMongo(ctx context.Context, client *mongo.Client) error {
 	// 	userId int PRIMARY KEY,
 	// 	username varchar(255),
 	// 	password varchar(255),
-	//  auth varchar(255)
+	//  auth varchar(255),
+	//  followers int,
+	//  following int,
+	//  posts int,
 	// );
 	
 	// CREATE TABLE following(
@@ -106,7 +109,7 @@ func initMongo(ctx context.Context, client *mongo.Client) error {
 	// 	userID int, 
 	// 	post varchar(255),
 	// 	dt DATETIME,
-		
+	//  postId varchar(255),
 	// 	FOREIGN KEY (userID) REFERENCES users(userId)
 	// )
 
