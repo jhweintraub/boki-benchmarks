@@ -101,7 +101,7 @@ services:
       - /mnt/inmem/boki:/tmp/boki
     environment:
       - MONGODB_URI=mongodb://mongodb-1:27017,mongodb-2:27017,mongodb-3:27017/?replicaSet=rs0
-      - MYSQL_URI=admin:GoDawgs1!@tcp(dcs-db-1.ctugy0c6df5g.us-east-2.rds.amazonaws.com:3306)/retwis
+      - MYSQL_URI=admin:GoDawgs1!@tcp(dcs-db.cffhebpjqpq2.us-east-1.rds.amazonaws.com:3306)/retwis
       - FAAS_GO_MAX_PROC_FACTOR=4
       - GOGC=200
     depends_on:
@@ -115,7 +115,7 @@ services:
       - /mnt/inmem/boki:/tmp/boki
     environment:
       - MONGODB_URI=mongodb://mongodb-1:27017,mongodb-2:27017,mongodb-3:27017/?replicaSet=rs0
-      - MYSQL_URI=admin:GoDawgs1!@tcp(dcs-db-1.ctugy0c6df5g.us-east-2.rds.amazonaws.com:3306)/retwis
+      - MYSQL_URI=admin:GoDawgs1!@tcp(dcs-db.cffhebpjqpq2.us-east-1.rds.amazonaws.com:3306)/retwis
       - FAAS_GO_MAX_PROC_FACTOR=4
       - GOGC=200
     depends_on:
@@ -129,7 +129,7 @@ services:
       - /mnt/inmem/boki:/tmp/boki
     environment:
       - MONGODB_URI=mongodb://mongodb-1:27017,mongodb-2:27017,mongodb-3:27017/?replicaSet=rs0
-      - MYSQL_URI=admin:GoDawgs1!@tcp(dcs-db-1.ctugy0c6df5g.us-east-2.rds.amazonaws.com:3306)/retwis
+      - MYSQL_URI=admin:GoDawgs1!@tcp(dcs-db.cffhebpjqpq2.us-east-1.rds.amazonaws.com:3306)/retwis
       - FAAS_GO_MAX_PROC_FACTOR=4
       - GOGC=200
     depends_on:
@@ -143,7 +143,7 @@ services:
       - /mnt/inmem/boki:/tmp/boki
     environment:
       - MONGODB_URI=mongodb://mongodb-1:27017,mongodb-2:27017,mongodb-3:27017/?replicaSet=rs0
-      - MYSQL_URI=admin:GoDawgs1!@tcp(dcs-db-1.ctugy0c6df5g.us-east-2.rds.amazonaws.com:3306)/retwis
+      - MYSQL_URI=admin:GoDawgs1!@tcp(dcs-db.cffhebpjqpq2.us-east-1.rds.amazonaws.com:3306)/retwis
       - FAAS_GO_MAX_PROC_FACTOR=4
       - GOGC=200
     depends_on:
@@ -157,7 +157,7 @@ services:
       - /mnt/inmem/boki:/tmp/boki
     environment:
       - MONGODB_URI=mongodb://mongodb-1:27017,mongodb-2:27017,mongodb-3:27017/?replicaSet=rs0
-      - MYSQL_URI=admin:GoDawgs1!@tcp(dcs-db-1.ctugy0c6df5g.us-east-2.rds.amazonaws.com:3306)/retwis
+      - MYSQL_URI=admin:GoDawgs1!@tcp(dcs-db.cffhebpjqpq2.us-east-1.rds.amazonaws.com:3306)/retwis
       - FAAS_GO_MAX_PROC_FACTOR=4
       - GOGC=200
     depends_on:
@@ -171,7 +171,7 @@ services:
       - /mnt/inmem/boki:/tmp/boki
     environment:
       - MONGODB_URI=mongodb://mongodb-1:27017,mongodb-2:27017,mongodb-3:27017/?replicaSet=rs0
-      - MYSQL_URI=admin:GoDawgs1!@tcp(dcs-db-1.ctugy0c6df5g.us-east-2.rds.amazonaws.com:3306)/retwis
+      - MYSQL_URI=admin:GoDawgs1!@tcp(dcs-db.cffhebpjqpq2.us-east-1.rds.amazonaws.com:3306)/retwis
       - FAAS_GO_MAX_PROC_FACTOR=4
       - GOGC=200
     depends_on:
@@ -185,7 +185,7 @@ services:
       - /mnt/inmem/boki:/tmp/boki
     environment:
       - MONGODB_URI=mongodb://mongodb-1:27017,mongodb-2:27017,mongodb-3:27017/?replicaSet=rs0
-      - MYSQL_URI=admin:GoDawgs1!@tcp(dcs-db-1.ctugy0c6df5g.us-east-2.rds.amazonaws.com:3306)/retwis
+      - MYSQL_URI=admin:GoDawgs1!@tcp(dcs-db.cffhebpjqpq2.us-east-1.rds.amazonaws.com:3306)/retwis
       - FAAS_GO_MAX_PROC_FACTOR=4
       - GOGC=200
     depends_on:
